@@ -1,0 +1,653 @@
+/* Main Styles for ESP32 Patient Monitor System */
+
+/* Global Variables */
+:root {
+    --primary-color: #007bff;
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #17a2b8;
+    --light-color: #f8f9fa;
+    --dark-color: #343a40;
+    --border-radius: 8px;
+    --box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    --transition: all 0.3s ease;
+}
+
+/* Base Styles */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f8f9fa;
+    color: #333;
+}
+
+.card {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: var(--box-shadow);
+    transition: var(--transition);
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: var(--border-radius) var(--border-radius) 0 0 !important;
+    border: none;
+}
+
+/* Vital Signs Display */
+.vital-sign {
+    text-align: center;
+    padding: 1.5rem;
+    border-radius: var(--border-radius);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+
+.vital-sign::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0.05));
+    opacity: 0;
+    transition: var(--transition);
+}
+
+.vital-sign:hover::before {
+    opacity: 1;
+}
+
+.vital-sign.normal {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    color: white;
+}
+
+.vital-sign.warning {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    color: white;
+}
+
+.vital-sign.critical {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    color: white;
+    animation: pulse 2s infinite;
+}
+
+.vital-sign h3 {
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin: 0.5rem 0;
+}
+
+.vital-sign p {
+    margin: 0;
+    font-weight: 500;
+    opacity: 0.9;
+}
+
+.vital-sign small {
+    opacity: 0.8;
+    font-size: 0.8rem;
+}
+
+/* Vital Signs Display in Tables */
+.vital-sign-display {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.vital-sign-display.text-success {
+    background-color: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+    border: 1px solid rgba(40, 167, 69, 0.2);
+}
+
+.vital-sign-display.text-danger {
+    background-color: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+    border: 1px solid rgba(220, 53, 69, 0.2);
+}
+
+.vital-sign-display.text-warning {
+    background-color: rgba(255, 193, 7, 0.1);
+    color: #ffc107;
+    border: 1px solid rgba(255, 193, 7, 0.2);
+}
+
+.vital-sign-display.text-info {
+    background-color: rgba(23, 162, 184, 0.1);
+    color: #17a2b8;
+    border: 1px solid rgba(23, 162, 184, 0.2);
+}
+
+.vital-sign-display.text-muted {
+    background-color: rgba(108, 117, 125, 0.1);
+    color: #6c757d;
+    border: 1px solid rgba(108, 117, 125, 0.2);
+}
+
+/* Status Badges */
+.status-active {
+    background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    color: white;
+}
+
+.status-warning {
+    background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    color: white;
+}
+
+.status-critical {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    color: white;
+    animation: pulse 2s infinite;
+}
+
+.status-discharged {
+    background: linear-gradient(135deg, #6c757d 0%, #495057 100%);
+    color: white;
+}
+
+/* Sensor Status Display */
+.sensor-status {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem;
+    background: rgba(0, 123, 255, 0.05);
+    border-radius: var(--border-radius);
+    border-left: 4px solid var(--primary-color);
+    margin-bottom: 0.5rem;
+    transition: var(--transition);
+}
+
+.sensor-status:hover {
+    background: rgba(0, 123, 255, 0.1);
+    transform: translateX(5px);
+}
+
+.sensor-status i {
+    font-size: 1.2rem;
+    margin-right: 0.75rem;
+    width: 20px;
+    text-align: center;
+}
+
+.sensor-status span:first-of-type {
+    flex: 1;
+    font-weight: 500;
+}
+
+/* Environment Statistics */
+.env-stat {
+    text-align: center;
+    padding: 1rem;
+}
+
+.env-stat h4 {
+    color: var(--primary-color);
+    font-weight: bold;
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.env-stat p {
+    color: var(--secondary-color);
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* Alert Styling */
+.alert {
+    border: none;
+    border-radius: var(--border-radius);
+    border-left: 4px solid;
+    margin-bottom: 1rem;
+}
+
+.alert-danger {
+    background: rgba(220, 53, 69, 0.1);
+    border-left-color: var(--danger-color);
+    color: var(--danger-color);
+}
+
+.alert-warning {
+    background: rgba(255, 193, 7, 0.1);
+    border-left-color: var(--warning-color);
+    color: var(--warning-color);
+}
+
+.alert-info {
+    background: rgba(23, 162, 184, 0.1);
+    border-left-color: var(--info-color);
+    color: var(--info-color);
+}
+
+.alert-success {
+    background: rgba(40, 167, 69, 0.1);
+    border-left-color: var(--success-color);
+    color: var(--success-color);
+}
+
+/* Table Styling */
+.table {
+    background: white;
+    border-radius: var(--border-radius);
+    overflow: hidden;
+}
+
+.table thead th {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    font-weight: 600;
+    padding: 1rem;
+}
+
+.table tbody tr {
+    transition: var(--transition);
+}
+
+.table tbody tr:hover {
+    background-color: rgba(0, 123, 255, 0.05);
+    transform: scale(1.01);
+}
+
+.table tbody td {
+    padding: 1rem;
+    vertical-align: middle;
+    border: none;
+    border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+
+/* Chart Containers */
+.ecg-chart-container,
+.gps-map-container {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    border: 1px solid rgba(0,0,0,0.1);
+}
+
+/* GPS Map Styling */
+#gps-map {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 2px dashed #dee2e6;
+    transition: var(--transition);
+}
+
+#gps-map:hover {
+    border-color: var(--primary-color);
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+}
+
+/* Fall Detection Alert Modal */
+.modal-header.bg-danger {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%) !important;
+}
+
+.modal-content {
+    border: none;
+    border-radius: var(--border-radius);
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+}
+
+/* Button Styling */
+.btn {
+    border-radius: var(--border-radius);
+    font-weight: 500;
+    transition: var(--transition);
+    border: none;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+    transform: translateY(-2px);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #c82333 0%, #a71e2a 100%);
+    transform: translateY(-2px);
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+    color: #212529;
+}
+
+.btn-warning:hover {
+    background: linear-gradient(135deg, #e0a800 0%, #c69500 100%);
+    transform: translateY(-2px);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+}
+
+.btn-success:hover {
+    background: linear-gradient(135deg, #1e7e34 0%, #155724 100%);
+    transform: translateY(-2px);
+}
+
+/* Progress Bars */
+.progress {
+    height: 8px;
+    border-radius: 4px;
+    background: rgba(255,255,255,0.2);
+    overflow: hidden;
+}
+
+.progress-bar {
+    border-radius: 4px;
+    transition: width 0.6s ease;
+}
+
+/* Animations */
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.05);
+    }
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(-100%);
+    }
+    to {
+        transform: translateX(0);
+    }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .vital-sign {
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .vital-sign h3 {
+        font-size: 2rem;
+    }
+    
+    .table-responsive {
+        border-radius: var(--border-radius);
+    }
+    
+    .sensor-status {
+        flex-direction: column;
+        text-align: center;
+        padding: 1rem;
+    }
+    
+    .sensor-status i {
+        margin-right: 0;
+        margin-bottom: 0.5rem;
+    }
+}
+
+@media (max-width: 576px) {
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .vital-sign h3 {
+        font-size: 1.5rem;
+    }
+    
+    .env-stat h4 {
+        font-size: 1.5rem;
+    }
+}
+
+/* Loading States */
+.loading {
+    position: relative;
+    overflow: hidden;
+}
+
+.loading::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    animation: loading 1.5s infinite;
+}
+
+@keyframes loading {
+    0% {
+        left: -100%;
+    }
+    100% {
+        left: 100%;
+    }
+}
+
+/* Real-time Updates */
+.real-time-update {
+    animation: fadeIn 0.5s ease;
+}
+
+/* Sensor Data Highlighting */
+.sensor-data-highlight {
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    border-radius: 4px;
+    padding: 0.5rem;
+    margin: 0.5rem 0;
+    transition: var(--transition);
+}
+
+.sensor-data-highlight:hover {
+    background: rgba(255, 193, 7, 0.2);
+    transform: scale(1.02);
+}
+
+/* Emergency Alert Styling */
+.emergency-alert {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
+    color: white;
+    border: none;
+    border-radius: var(--border-radius);
+    padding: 1rem;
+    margin: 1rem 0;
+    animation: pulse 1s infinite;
+    box-shadow: 0 4px 20px rgba(220, 53, 69, 0.3);
+}
+
+.emergency-alert i {
+    margin-right: 0.5rem;
+    font-size: 1.2rem;
+}
+
+/* ECG Waveform Styling */
+.ecg-waveform {
+    background: #000;
+    border-radius: 4px;
+    padding: 1rem;
+    color: #00ff00;
+    font-family: 'Courier New', monospace;
+    font-size: 0.8rem;
+    line-height: 1.2;
+    overflow: hidden;
+}
+
+/* GPS Coordinate Display */
+.gps-coordinates {
+    background: rgba(23, 162, 184, 0.1);
+    border: 1px solid rgba(23, 162, 184, 0.3);
+    border-radius: 4px;
+    padding: 0.5rem;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    color: var(--info-color);
+}
+
+/* Fall Detection Status */
+.fall-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-weight: 600;
+    transition: var(--transition);
+}
+
+.fall-status.safe {
+    background: rgba(40, 167, 69, 0.1);
+    color: var(--success-color);
+    border: 1px solid rgba(40, 167, 69, 0.3);
+}
+
+.fall-status.detected {
+    background: rgba(220, 53, 69, 0.1);
+    color: var(--danger-color);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    animation: pulse 1s infinite;
+}
+
+/* Device Status Indicators */
+.device-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.device-status.online {
+    background: rgba(40, 167, 69, 0.1);
+    color: var(--success-color);
+}
+
+.device-status.offline {
+    background: rgba(220, 53, 69, 0.1);
+    color: var(--danger-color);
+}
+
+.device-status.warning {
+    background: rgba(255, 193, 7, 0.1);
+    color: var(--warning-color);
+}
+
+/* Battery Level Indicator */
+.battery-level {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.battery-level.high {
+    background: rgba(40, 167, 69, 0.1);
+    color: var(--success-color);
+}
+
+.battery-level.medium {
+    background: rgba(255, 193, 7, 0.1);
+    color: var(--warning-color);
+}
+
+.battery-level.low {
+    background: rgba(220, 53, 69, 0.1);
+    color: var(--danger-color);
+    animation: pulse 2s infinite;
+}
+
+/* Signal Strength Indicator */
+.signal-strength {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.signal-strength.excellent {
+    background: rgba(40, 167, 69, 0.1);
+    color: var(--success-color);
+}
+
+.signal-strength.good {
+    background: rgba(23, 162, 184, 0.1);
+    color: var(--info-color);
+}
+
+.signal-strength.fair {
+    background: rgba(255, 193, 7, 0.1);
+    color: var(--warning-color);
+}
+
+.signal-strength.poor {
+    background: rgba(220, 53, 69, 0.1);
+    color: var(--danger-color);
+}
+
+/* Print Styles */
+@media print {
+    .card {
+        box-shadow: none;
+        border: 1px solid #ddd;
+    }
+    
+    .btn {
+        display: none;
+    }
+    
+    .vital-sign {
+        break-inside: avoid;
+    }
+    
+    .table {
+        font-size: 0.8rem;
+    }
+}

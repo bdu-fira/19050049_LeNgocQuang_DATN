@@ -1,0 +1,839 @@
+{% extends "base.html" %}
+
+{% block title %}{{ patient.name }} - Hệ thống theo dõi bệnh nhân{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h2>
+            <i class="fas fa-user me-2"></i>
+            {{ patient.name }}
+            <span class="badge status-{{ patient.status }} ms-2">
+                {% if patient.status == 'active' %}Đang hoạt động
+                {% elif patient.status == 'discharged' %}Đã xuất viện
+                {% elif patient.status == 'critical' %}Nguy hiểm
+                {% else %}{{ patient.status }}{% endif %}
+            </span>
+        </h2>
+        <p class="text-muted">Theo dõi chi tiết tình trạng sức khỏe</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <div class="btn-group" role="group">
+            <a href="{{ url_for('patients') }}" class="btn btn-outline-secondary">
+                <i class="fas fa-arrow-left me-2"></i>Quay lại
+            </a>
+            <button class="btn btn-outline-primary" onclick="refreshData()">
+                <i class="fas fa-sync-alt me-2"></i>Làm mới
+            </button>
+            <button class="btn btn-outline-info" onclick="printReport()">
+                <i class="fas fa-print me-2"></i>In báo cáo
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Patient Information -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-user-circle me-2"></i>Thông tin bệnh nhân</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <strong>Mã bệnh nhân:</strong>
+                    </div>
+                    <div class="col-6">
+                        <span class="badge bg-primary">{{ patient.medical_id }}</span>
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <strong>Tuổi:</strong>
+                    </div>
+                    <div class="col-6">
+                        {{ patient.age }} tuổi
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <strong>Giới tính:</strong>
+                    </div>
+                    <div class="col-6">
+                        <i class="fas fa-{{ 'mars' if patient.gender == 'Nam' else 'venus' }} me-1"></i>
+                        {{ patient.gender }}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <strong>Số phòng:</strong>
+                    </div>
+                    <div class="col-6">
+                        <i class="fas fa-bed me-1"></i>
+                        {{ patient.room_number or 'Chưa gán' }}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <strong>Điện thoại:</strong>
+                    </div>
+                    <div class="col-6">
+                        {{ patient.phone or 'Chưa có' }}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <strong>Email:</strong>
+                    </div>
+                    <div class="col-6">
+                        {{ patient.email or 'Chưa có' }}
+                    </div>
+                </div>
+                <div class="row mb-3">
+                    <div class="col-6">
+                        <strong>Nhập viện:</strong>
+                    </div>
+                    <div class="col-6">
+                        {{ patient.created_at.strftime('%d/%m/%Y') }}
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-12">
+                        <strong>Thiết bị ESP32:</strong>
+                        <br>
+                        <code class="small">{{ patient.device_id or 'N/A' }}</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Current Vital Signs -->
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-heartbeat me-2"></i>Chỉ số sinh hiệu hiện tại</h5>
+                <small class="text-muted">Cập nhật tự động mỗi 30 giây</small>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="vital-sign normal" id="heart-rate-card">
+                            <i class="fas fa-heartbeat fa-2x mb-2"></i>
+                            <h3 id="heart-rate-value">--</h3>
+                            <p>Nhịp tim (bpm)</p>
+                            <small class="text-muted">MH-ETLive</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="vital-sign normal" id="body-temperature-card">
+                            <i class="fas fa-thermometer-half fa-2x mb-2"></i>
+                            <h3 id="body-temperature-value">--</h3>
+                            <p>Nhiệt độ cơ thể (°C)</p>
+                            <small class="text-muted">DS18B20</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="vital-sign normal" id="oxygen-card">
+                            <i class="fas fa-lungs fa-2x mb-2"></i>
+                            <h3 id="oxygen-value">--</h3>
+                            <p>SpO2 (%)</p>
+                            <small class="text-muted">MH-ETLive</small>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="vital-sign normal" id="blood-pressure-card">
+                            <i class="fas fa-tint fa-2x mb-2"></i>
+                            <h3 id="blood-pressure-value">--/--</h3>
+                            <p>Huyết áp (mmHg)</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row text-center mt-3">
+                    <div class="col-md-4">
+                        <div class="vital-sign normal" id="respiratory-card">
+                            <i class="fas fa-wind fa-2x mb-2"></i>
+                            <h3 id="respiratory-value">--</h3>
+                            <p>Nhịp thở (lần/phút)</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="vital-sign normal" id="room-temp-card">
+                            <i class="fas fa-home fa-2x mb-2"></i>
+                            <h3 id="room-temp-value">--</h3>
+                            <p>Nhiệt độ phòng (°C)</p>
+                            <small class="text-muted">DHT11</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="vital-sign normal" id="humidity-card">
+                            <i class="fas fa-tint fa-2x mb-2"></i>
+                            <h3 id="humidity-value">--</h3>
+                            <p>Độ ẩm (%)</p>
+                            <small class="text-muted">DHT11</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ECG and GPS Location -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-heartbeat me-2"></i>Điện tâm đồ (ECG)</h5>
+                <small class="text-muted">AD8232 Sensor</small>
+            </div>
+            <div class="card-body">
+                <div class="row text-center mb-3">
+                    <div class="col-md-6">
+                        <div class="vital-sign normal" id="ecg-value-card">
+                            <i class="fas fa-wave-square fa-2x mb-2"></i>
+                            <h3 id="ecg-value">--</h3>
+                            <p>Giá trị ECG</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="vital-sign normal" id="ecg-status-card">
+                            <i class="fas fa-plug fa-2x mb-2"></i>
+                            <h3 id="ecg-status">--</h3>
+                            <p>Trạng thái điện cực</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="ecg-chart-container">
+                    <canvas id="ecgChart" width="400" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-map-marker-alt me-2"></i>Vị trí GPS</h5>
+                <small class="text-muted">NEO-6M Module</small>
+            </div>
+            <div class="card-body">
+                <div class="row text-center mb-3">
+                    <div class="col-md-6">
+                        <div class="vital-sign normal" id="gps-location-card">
+                            <i class="fas fa-map-pin fa-2x mb-2"></i>
+                            <h3 id="room-detected">--</h3>
+                            <p>Phòng hiện tại</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="vital-sign normal" id="gps-accuracy-card">
+                            <i class="fas fa-crosshairs fa-2x mb-2"></i>
+                            <h3 id="gps-accuracy">--</h3>
+                            <p>Độ chính xác GPS</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="gps-map-container">
+                    <div id="gps-map" style="height: 200px; background: #f8f9fa; border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+                        <div class="text-center">
+                            <i class="fas fa-map fa-3x text-muted mb-2"></i>
+                            <p class="text-muted">Bản đồ GPS sẽ hiển thị ở đây</p>
+                            <small id="gps-coordinates">Tọa độ: --, --</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Fall Detection and Emergency Alerts -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-exclamation-triangle me-2"></i>Phát hiện té ngã</h5>
+                <small class="text-muted">Run MHsensor Series</small>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-6">
+                        <div class="vital-sign normal" id="fall-detection-card">
+                            <i class="fas fa-user-fall fa-2x mb-2"></i>
+                            <h3 id="fall-detected">--</h3>
+                            <p>Trạng thái té ngã</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="vital-sign normal" id="fall-confidence-card">
+                            <i class="fas fa-percentage fa-2x mb-2"></i>
+                            <h3 id="fall-confidence">--</h3>
+                            <p>Độ tin cậy (%)</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="alert alert-info mt-3" id="fall-info" style="display: none;">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Thông tin:</strong> Cảm biến té ngã đang hoạt động bình thường
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-bell me-2"></i>Cảnh báo khẩn cấp</h5>
+                <small class="text-muted">Nút nhấn & Hệ thống</small>
+            </div>
+            <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-md-6">
+                        <div class="vital-sign normal" id="emergency-button-card">
+                            <i class="fas fa-exclamation-circle fa-2x mb-2"></i>
+                            <h3 id="emergency-button-status">--</h3>
+                            <p>Nút cảnh báo</p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="vital-sign normal" id="alert-level-card">
+                            <i class="fas fa-shield-alt fa-2x mb-2"></i>
+                            <h3 id="alert-level">--</h3>
+                            <p>Mức độ cảnh báo</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="alert alert-warning mt-3" id="emergency-info" style="display: none;">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    <strong>Cảnh báo:</strong> Hệ thống đang theo dõi các tình huống khẩn cấp
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts -->
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line me-2"></i>Biểu đồ nhịp tim</h5>
+                <small class="text-muted">MH-ETLive Sensor</small>
+            </div>
+            <div class="card-body">
+                <canvas id="heartRateChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line me-2"></i>Biểu đồ nhiệt độ cơ thể</h5>
+                <small class="text-muted">DS18B20 Sensor</small>
+            </div>
+            <div class="card-body">
+                <canvas id="bodyTemperatureChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line me-2"></i>Biểu đồ SpO2</h5>
+                <small class="text-muted">MH-ETLive Sensor</small>
+            </div>
+            <div class="card-body">
+                <canvas id="oxygenChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line me-2"></i>Biểu đồ môi trường phòng</h5>
+                <small class="text-muted">DHT11 Sensor</small>
+            </div>
+            <div class="card-body">
+                <canvas id="environmentChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Readings -->
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-history me-2"></i>Lịch sử đo</h5>
+                <select class="form-select" id="timeRange" style="width: auto;">
+                    <option value="24">24 giờ qua</option>
+                    <option value="168">7 ngày qua</option>
+                    <option value="720">30 ngày qua</option>
+                </select>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover" id="readingsTable">
+                        <thead>
+                            <tr>
+                                <th>Thời gian</th>
+                                <th>Nhịp tim</th>
+                                <th>Nhiệt độ cơ thể</th>
+                                <th>SpO2</th>
+                                <th>Nhiệt độ phòng</th>
+                                <th>Độ ẩm</th>
+                                <th>ECG</th>
+                                <th>Té ngã</th>
+                                <th>Vị trí</th>
+                                <th>Trạng thái</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for reading in readings %}
+                            <tr class="reading-row">
+                                <td>{{ reading.timestamp.strftime('%d/%m/%Y %H:%M:%S') }}</td>
+                                <td>
+                                    <span class="text-{{ 'danger' if reading.heart_rate and (reading.heart_rate < 60 or reading.heart_rate > 100) else 'success' }}">
+                                        {{ reading.heart_rate or '--' }}
+                                        {% if reading.heart_rate %} bpm{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="text-{{ 'danger' if reading.body_temperature and (reading.body_temperature < 36 or reading.body_temperature > 38) else 'success' }}">
+                                        {{ reading.body_temperature or '--' }}
+                                        {% if reading.body_temperature %} °C{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="text-{{ 'danger' if reading.oxygen_saturation and reading.oxygen_saturation < 95 else 'success' }}">
+                                        {{ reading.oxygen_saturation or '--' }}
+                                        {% if reading.oxygen_saturation %} %{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="text-{{ 'danger' if reading.room_temperature and (reading.room_temperature < 18 or reading.room_temperature > 30) else 'success' }}">
+                                        {{ reading.room_temperature or '--' }}
+                                        {% if reading.room_temperature %} °C{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="text-{{ 'danger' if reading.humidity and (reading.humidity < 30 or reading.humidity > 70) else 'success' }}">
+                                        {{ reading.humidity or '--' }}
+                                        {% if reading.humidity %} %{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if reading.ecg_leads_connected else 'danger' }}">
+                                        {{ reading.ecg_status or '--' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'danger' if reading.fall_detected else 'success' }}">
+                                        {{ 'CÓ' if reading.fall_detected else 'KHÔNG' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="text-muted">
+                                        {{ reading.room_detected or '--' }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge status-{{ reading.alert_level }}">
+                                        {% if reading.alert_level == 'normal' %}Bình thường
+                                        {% elif reading.alert_level == 'warning' %}Cảnh báo
+                                        {% elif reading.alert_level == 'critical' %}Nguy hiểm
+                                        {% else %}{{ reading.alert_level }}{% endif %}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    let heartRateChart, bodyTemperatureChart, oxygenChart, environmentChart, ecgChart;
+    const patientId = Number("{{ patient.id }}");
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        initializeCharts();
+        loadPatientData();
+        
+        // Auto-refresh every 30 seconds
+        setInterval(loadPatientData, 30000);
+        
+        // Time range selector
+        document.getElementById('timeRange').addEventListener('change', function() {
+            loadChartData();
+        });
+    });
+    
+    function initializeCharts() {
+        const chartOptions = {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: false
+                }
+            },
+            plugins: {
+                legend: {
+                    display: true
+                }
+            }
+        };
+        
+        // Heart Rate Chart
+        const heartRateCtx = document.getElementById('heartRateChart').getContext('2d');
+        heartRateChart = new Chart(heartRateCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Nhịp tim (bpm)',
+                    data: [],
+                    borderColor: 'rgb(220, 53, 69)',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    tension: 0.1
+                }]
+            },
+            options: chartOptions
+        });
+        
+        // Body Temperature Chart
+        const bodyTemperatureCtx = document.getElementById('bodyTemperatureChart').getContext('2d');
+        bodyTemperatureChart = new Chart(bodyTemperatureCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Nhiệt độ cơ thể (°C)',
+                    data: [],
+                    borderColor: 'rgb(255, 193, 7)',
+                    backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                    tension: 0.1
+                }]
+            },
+            options: chartOptions
+        });
+        
+        // Oxygen Chart
+        const oxygenCtx = document.getElementById('oxygenChart').getContext('2d');
+        oxygenChart = new Chart(oxygenCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'SpO2 (%)',
+                    data: [],
+                    borderColor: 'rgb(40, 167, 69)',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    tension: 0.1
+                }]
+            },
+            options: chartOptions
+        });
+        
+        // Environment Chart
+        const environmentCtx = document.getElementById('environmentChart').getContext('2d');
+        environmentChart = new Chart(environmentCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Nhiệt độ phòng (°C)',
+                    data: [],
+                    borderColor: 'rgb(23, 162, 184)',
+                    backgroundColor: 'rgba(23, 162, 184, 0.1)',
+                    tension: 0.1
+                }, {
+                    label: 'Độ ẩm (%)',
+                    data: [],
+                    borderColor: 'rgb(102, 16, 242)',
+                    backgroundColor: 'rgba(102, 16, 242, 0.1)',
+                    tension: 0.1
+                }]
+            },
+            options: chartOptions
+        });
+        
+        // ECG Chart
+        const ecgCtx = document.getElementById('ecgChart').getContext('2d');
+        ecgChart = new Chart(ecgCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'ECG Signal',
+                    data: [],
+                    borderColor: 'rgb(220, 53, 69)',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    tension: 0.1,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: false
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: true
+                    }
+                }
+            }
+        });
+    }
+    
+    function loadPatientData() {
+        fetch(`/api/patient_readings/${patientId}?hours=24`)
+            .then(response => response.json())
+            .then(data => {
+                updateVitalSigns(data);
+                updateCharts(data);
+                updateTable(data);
+            })
+            .catch(error => console.error('Error loading patient data:', error));
+    }
+    
+    function updateVitalSigns(data) {
+        if (data.length > 0) {
+            const latest = data[0];
+            
+            // Update vital signs
+            updateVitalSign('heart-rate', latest.heart_rate, 'bpm');
+            updateVitalSign('body-temperature', latest.body_temperature, '°C');
+            updateVitalSign('oxygen', latest.oxygen_saturation, '%');
+            updateVitalSign('blood-pressure', `${latest.blood_pressure_systolic || '--'}/${latest.blood_pressure_diastolic || '--'}`, '');
+            updateVitalSign('respiratory', latest.respiratory_rate, 'lần/phút');
+            updateVitalSign('room-temp', latest.room_temperature, '°C');
+            updateVitalSign('humidity', latest.humidity, '%');
+            
+            // Update ECG data
+            updateVitalSign('ecg-value', latest.ecg_value, '');
+            updateVitalSign('ecg-status', latest.ecg_status || '--', '');
+            
+            // Update GPS data
+            updateVitalSign('room-detected', latest.room_detected || '--', '');
+            updateVitalSign('gps-accuracy', latest.gps_accuracy || '--', 'm');
+            
+            // Update fall detection
+            updateVitalSign('fall-detected', latest.fall_detected ? 'CÓ' : 'KHÔNG', '');
+            updateVitalSign('fall-confidence', latest.fall_confidence ? Math.round(latest.fall_confidence * 100) : '--', '%');
+            
+            // Update emergency status
+            updateVitalSign('emergency-button-status', latest.emergency_button_pressed ? 'ĐÃ NHẤN' : 'CHƯA NHẤN', '');
+            updateVitalSign('alert-level', latest.alert_level || '--', '');
+            
+            // Update GPS coordinates
+            if (latest.gps_latitude && latest.gps_longitude) {
+                document.getElementById('gps-coordinates').textContent = 
+                    `Tọa độ: ${latest.gps_latitude.toFixed(6)}, ${latest.gps_longitude.toFixed(6)}`;
+            }
+            
+            // Update alert colors based on values
+            updateAlertColors(latest);
+        }
+    }
+    
+    function updateVitalSign(id, value, unit) {
+        const element = document.getElementById(`${id}-value`) || document.getElementById(id);
+        if (element && value !== null && value !== undefined) {
+            element.textContent = value + unit;
+        }
+    }
+    
+    function updateAlertColors(data) {
+        // Update heart rate color
+        if (data.heart_rate) {
+            const hr = data.heart_rate;
+            const card = document.getElementById('heart-rate-card');
+            if (hr < 60 || hr > 100) {
+                card.className = 'vital-sign warning';
+            } else {
+                card.className = 'vital-sign normal';
+            }
+        }
+        
+        // Update body temperature color
+        if (data.body_temperature) {
+            const temp = data.body_temperature;
+            const card = document.getElementById('body-temperature-card');
+            if (temp < 36 || temp > 38) {
+                card.className = 'vital-sign warning';
+            } else {
+                card.className = 'vital-sign normal';
+            }
+        }
+        
+        // Update oxygen color
+        if (data.oxygen_saturation) {
+            const spo2 = data.oxygen_saturation;
+            const card = document.getElementById('oxygen-card');
+            if (spo2 < 95) {
+                card.className = 'vital-sign warning';
+            } else {
+                card.className = 'vital-sign normal';
+            }
+        }
+        
+        // Update fall detection
+        if (data.fall_detected) {
+            document.getElementById('fall-detection-card').className = 'vital-sign critical';
+            document.getElementById('fall-info').style.display = 'block';
+            document.getElementById('fall-info').className = 'alert alert-danger mt-3';
+            document.getElementById('fall-info').innerHTML = 
+                '<i class="fas fa-exclamation-triangle me-2"></i><strong>NGUY HIỂM:</strong> Phát hiện té ngã! Cần can thiệp ngay lập tức!';
+        } else {
+            document.getElementById('fall-detection-card').className = 'vital-sign normal';
+            document.getElementById('fall-info').style.display = 'none';
+        }
+        
+        // Update emergency button
+        if (data.emergency_button_pressed) {
+            document.getElementById('emergency-button-card').className = 'vital-sign critical';
+            document.getElementById('emergency-info').style.display = 'block';
+            document.getElementById('emergency-info').className = 'alert alert-danger mt-3';
+            document.getElementById('emergency-info').innerHTML = 
+                '<i class="fas fa-exclamation-triangle me-2"></i><strong>KHẨN CẤP:</strong> Nút cảnh báo được nhấn!';
+        } else {
+            document.getElementById('emergency-button-card').className = 'vital-sign normal';
+            document.getElementById('emergency-info').style.display = 'none';
+        }
+    }
+    
+    function updateCharts(data) {
+        const labels = data.map(reading => 
+            new Date(reading.timestamp).toLocaleTimeString('vi-VN', {hour: '2-digit', minute: '2-digit'})
+        ).reverse();
+        
+        const heartRateData = data.map(reading => reading.heart_rate).reverse();
+        const bodyTempData = data.map(reading => reading.body_temperature).reverse();
+        const oxygenData = data.map(reading => reading.oxygen_saturation).reverse();
+        const roomTempData = data.map(reading => reading.room_temperature).reverse();
+        const humidityData = data.map(reading => reading.humidity).reverse();
+        const ecgData = data.map(reading => reading.ecg_value).reverse();
+        
+        // Update charts
+        heartRateChart.data.labels = labels;
+        heartRateChart.data.datasets[0].data = heartRateData;
+        heartRateChart.update();
+        
+        bodyTemperatureChart.data.labels = labels;
+        bodyTemperatureChart.data.datasets[0].data = bodyTempData;
+        bodyTemperatureChart.update();
+        
+        oxygenChart.data.labels = labels;
+        oxygenChart.data.datasets[0].data = oxygenData;
+        oxygenChart.update();
+        
+        environmentChart.data.labels = labels;
+        environmentChart.data.datasets[0].data = roomTempData;
+        environmentChart.data.datasets[1].data = humidityData;
+        environmentChart.update();
+        
+        ecgChart.data.labels = labels;
+        ecgChart.data.datasets[0].data = ecgData;
+        ecgChart.update();
+    }
+    
+    function updateTable(data) {
+        const tbody = document.querySelector('#readingsTable tbody');
+        tbody.innerHTML = '';
+        
+        data.forEach(reading => {
+            const row = document.createElement('tr');
+            row.className = 'reading-row';
+            row.innerHTML = `
+                <td>${new Date(reading.timestamp).toLocaleString('vi-VN')}</td>
+                <td>
+                    <span class="text-${reading.heart_rate && (reading.heart_rate < 60 || reading.heart_rate > 100) ? 'danger' : 'success'}">
+                        ${reading.heart_rate || '--'}${reading.heart_rate ? ' bpm' : ''}
+                    </span>
+                </td>
+                <td>
+                    <span class="text-${reading.body_temperature && (reading.body_temperature < 36 || reading.body_temperature > 38) ? 'danger' : 'success'}">
+                        ${reading.body_temperature || '--'}${reading.body_temperature ? ' °C' : ''}
+                    </span>
+                </td>
+                <td>
+                    <span class="text-${reading.oxygen_saturation && reading.oxygen_saturation < 95 ? 'danger' : 'success'}">
+                        ${reading.oxygen_saturation || '--'}${reading.oxygen_saturation ? ' %' : ''}
+                    </span>
+                </td>
+                <td>
+                    <span class="text-${reading.room_temperature && (reading.room_temperature < 18 || reading.room_temperature > 30) ? 'danger' : 'success'}">
+                        ${reading.room_temperature || '--'}${reading.room_temperature ? ' °C' : ''}
+                    </span>
+                </td>
+                <td>
+                    <span class="text-${reading.humidity && (reading.humidity < 30 || reading.humidity > 70) ? 'danger' : 'success'}">
+                        ${reading.humidity || '--'}${reading.humidity ? ' %' : ''}
+                    </span>
+                </td>
+                <td>
+                    <span class="badge bg-${reading.ecg_leads_connected ? 'success' : 'danger'}">
+                        ${reading.ecg_status || '--'}
+                    </span>
+                </td>
+                <td>
+                    <span class="badge bg-${reading.fall_detected ? 'danger' : 'success'}">
+                        ${reading.fall_detected ? 'CÓ' : 'KHÔNG'}
+                    </span>
+                </td>
+                <td>
+                    <span class="text-muted">
+                        ${reading.room_detected || '--'}
+                    </span>
+                </td>
+                <td>
+                    <span class="badge status-${reading.alert_level}">
+                        ${reading.alert_level === 'normal' ? 'Bình thường' : 
+                          reading.alert_level === 'warning' ? 'Cảnh báo' : 
+                          reading.alert_level === 'critical' ? 'Nguy hiểm' : reading.alert_level}
+                    </span>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+    
+    function refreshData() {
+        loadPatientData();
+    }
+    
+    function printReport() {
+        window.print();
+    }
+    
+    function loadChartData() {
+        const hours = document.getElementById('timeRange').value;
+        fetch(`/api/patient_readings/${patientId}?hours=${hours}`)
+            .then(response => response.json())
+            .then(data => {
+                updateCharts(data);
+                updateTable(data);
+            })
+            .catch(error => console.error('Error loading chart data:', error));
+    }
+</script>
+{% endblock %} 

@@ -1,0 +1,446 @@
+{% extends "base.html" %}
+
+{% block title %}Danh sách bệnh nhân - Hệ thống theo dõi bệnh nhân{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-6">
+        <h2><i class="fas fa-users me-2"></i>Danh sách bệnh nhân</h2>
+        <p class="text-muted">Quản lý và theo dõi tất cả bệnh nhân</p>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="{{ url_for('add_patient') }}" class="btn btn-primary">
+            <i class="fas fa-plus me-2"></i>Thêm bệnh nhân
+        </a>
+    </div>
+</div>
+
+<!-- Search and Filter -->
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="input-group">
+            <span class="input-group-text">
+                <i class="fas fa-search"></i>
+            </span>
+            <input type="text" class="form-control" id="searchInput" placeholder="Tìm kiếm bệnh nhân...">
+        </div>
+    </div>
+    <div class="col-md-3">
+        <select class="form-select" id="statusFilter">
+            <option value="">Tất cả trạng thái</option>
+            <option value="active">Đang hoạt động</option>
+            <option value="discharged">Đã xuất viện</option>
+            <option value="critical">Nguy hiểm</option>
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select class="form-select" id="genderFilter">
+            <option value="">Tất cả giới tính</option>
+            <option value="Nam">Nam</option>
+            <option value="Nữ">Nữ</option>
+        </select>
+    </div>
+    <div class="col-md-2">
+        <button class="btn btn-outline-secondary w-100" onclick="clearFilters()">
+            <i class="fas fa-times me-2"></i>Xóa bộ lọc
+        </button>
+    </div>
+</div>
+
+<!-- Patients Table -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5><i class="fas fa-table me-2"></i>Danh sách bệnh nhân ({{ patients|length }})</h5>
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="viewMode('table')" id="tableView">
+                <i class="fas fa-table"></i>
+            </button>
+            <button type="button" class="btn btn-sm btn-outline-primary" onclick="viewMode('card')" id="cardView">
+                <i class="fas fa-th"></i>
+            </button>
+        </div>
+    </div>
+    <div class="card-body">
+        <!-- Table View -->
+        <div id="tableViewContainer">
+            <div class="table-responsive">
+                <table class="table table-hover" id="patientsTable">
+                    <thead>
+                        <tr>
+                            <th>Mã BN</th>
+                            <th>Họ tên</th>
+                            <th>Tuổi</th>
+                            <th>Giới tính</th>
+                            <th>Phòng</th>
+                            <th>Thiết bị ESP32</th>
+                            <th>Trạng thái</th>
+                            <th>Cập nhật cuối</th>
+                            <th>Hành động</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for patient in patients %}
+                        <tr data-patient-id="{{ patient.id }}" class="patient-row">
+                            <td>
+                                <span class="fw-bold">{{ patient.medical_id }}</span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm me-2">
+                                        <i class="fas fa-user-circle fa-2x text-primary"></i>
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ patient.name }}</div>
+                                        <small class="text-muted">{{ patient.email or 'Chưa có email' }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ patient.age }}</td>
+                            <td>
+                                <i class="fas fa-{{ 'mars' if patient.gender == 'Nam' else 'venus' }} me-1"></i>
+                                {{ patient.gender }}
+                            </td>
+                            <td>
+                                <i class="fas fa-bed me-1"></i>
+                                {{ patient.room_number or 'Chưa gán' }}
+                            </td>
+                            <td>
+                                <code class="small">{{ patient.device_id or 'N/A' }}</code>
+                            </td>
+                            <td>
+                                <span class="badge status-{{ patient.status }}">
+                                    {% if patient.status == 'active' %}Đang hoạt động
+                                    {% elif patient.status == 'discharged' %}Đã xuất viện
+                                    {% elif patient.status == 'critical' %}Nguy hiểm
+                                    {% else %}{{ patient.status }}{% endif %}
+                                </span>
+                                <div class="latest-reading-indicator" data-patient-id="{{ patient.id }}">
+                                    <span class="badge bg-secondary">Chưa có dữ liệu</span>
+                                </div>
+                            </td>
+                            <td>
+                                <small class="text-muted">
+                                    {{ patient.created_at.strftime('%d/%m/%Y %H:%M') }}
+                                </small>
+                            </td>
+                            <td>
+                                <div class="btn-group" role="group">
+                                    <a href="{{ url_for('patient_detail', patient_id=patient.id) }}" 
+                                       class="btn btn-sm btn-outline-primary" title="Xem chi tiết">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-info" 
+                                            onclick="editPatient({{ patient.id }})" title="Chỉnh sửa">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger" 
+                                            onclick="deletePatient({{ patient.id }})" title="Xóa">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <!-- Card View -->
+        <div id="cardViewContainer" style="display: none;">
+            <div class="row">
+                {% for patient in patients %}
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card patient-card h-100" data-patient-id="{{ patient.id }}">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start mb-2">
+                                <div>
+                                    <h6 class="card-title mb-1">{{ patient.name }}</h6>
+                                    <small class="text-muted">{{ patient.medical_id }}</small>
+                                </div>
+                                <span class="badge status-{{ patient.status }}">
+                                    {% if patient.status == 'active' %}Hoạt động
+                                    {% elif patient.status == 'discharged' %}Xuất viện
+                                    {% elif patient.status == 'critical' %}Nguy hiểm
+                                    {% else %}{{ patient.status }}{% endif %}
+                                </span>
+                            </div>
+                            
+                            <div class="row text-center mb-3">
+                                <div class="col-4">
+                                    <i class="fas fa-birthday-cake text-info"></i>
+                                    <div class="small">{{ patient.age }} tuổi</div>
+                                </div>
+                                <div class="col-4">
+                                    <i class="fas fa-{{ 'mars' if patient.gender == 'Nam' else 'venus' }} text-primary"></i>
+                                    <div class="small">{{ patient.gender }}</div>
+                                </div>
+                                <div class="col-4">
+                                    <i class="fas fa-bed text-success"></i>
+                                    <div class="small">{{ patient.room_number or 'N/A' }}</div>
+                                </div>
+                            </div>
+                            
+                            <div class="latest-vitals" data-patient-id="{{ patient.id }}">
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <div class="vital-mini">
+                                            <i class="fas fa-heartbeat text-danger"></i>
+                                            <div class="heart-rate">--</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="vital-mini">
+                                            <i class="fas fa-thermometer-half text-warning"></i>
+                                            <div class="temperature">--</div>
+                                        </div>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="vital-mini">
+                                            <i class="fas fa-lungs text-info"></i>
+                                            <div class="oxygen-saturation">--</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center mt-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-microchip me-1"></i>
+                                    {{ patient.device_id[:12] if patient.device_id else 'N/A' }}...
+                                </small>
+                                <div class="btn-group" role="group">
+                                    <a href="{{ url_for('patient_detail', patient_id=patient.id) }}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <button class="btn btn-sm btn-outline-info" 
+                                            onclick="editPatient({{ patient.id }})">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        {% if not patients %}
+        <div class="text-center py-5">
+            <i class="fas fa-user-plus fa-3x text-muted mb-3"></i>
+            <h5>Chưa có bệnh nhân nào</h5>
+            <p class="text-muted">Hãy thêm bệnh nhân đầu tiên để bắt đầu theo dõi</p>
+            <a href="{{ url_for('add_patient') }}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Thêm bệnh nhân
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .vital-mini {
+        padding: 5px;
+        text-align: center;
+    }
+    
+    .vital-mini i {
+        font-size: 1.2rem;
+        margin-bottom: 2px;
+    }
+    
+    .vital-mini div {
+        font-size: 0.9rem;
+        font-weight: bold;
+    }
+    
+    .patient-card {
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .patient-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .avatar-sm {
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .latest-reading-indicator {
+        margin-top: 2px;
+    }
+    
+    .latest-reading-indicator .badge {
+        font-size: 0.7rem;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let currentView = 'table';
+    
+    document.addEventListener('DOMContentLoaded', function() {
+        loadLatestReadings();
+        setupSearch();
+        setupFilters();
+        setInterval(loadLatestReadings, 60000); // Update every minute
+    });
+    
+    function viewMode(mode) {
+        currentView = mode;
+        if (mode === 'table') {
+            document.getElementById('tableViewContainer').style.display = 'block';
+            document.getElementById('cardViewContainer').style.display = 'none';
+            document.getElementById('tableView').classList.add('active');
+            document.getElementById('cardView').classList.remove('active');
+        } else {
+            document.getElementById('tableViewContainer').style.display = 'none';
+            document.getElementById('cardViewContainer').style.display = 'block';
+            document.getElementById('tableView').classList.remove('active');
+            document.getElementById('cardView').classList.add('active');
+        }
+    }
+    
+    function loadLatestReadings() {
+        fetch('/api/patients_status')
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(patient => {
+                    updatePatientStatus(patient);
+                });
+            })
+            .catch(error => console.error('Error loading patient data:', error));
+    }
+    
+    function updatePatientStatus(patient) {
+        // Update table view
+        const tableIndicator = document.querySelector(`tr[data-patient-id="${patient.id}"] .latest-reading-indicator`);
+        if (tableIndicator) {
+            const latest = patient.latest_reading;
+            if (latest) {
+                const alertClass = latest.alert_level === 'normal' ? 'success' : 
+                                 latest.alert_level === 'warning' ? 'warning' : 'danger';
+                tableIndicator.innerHTML = `
+                    <span class="badge bg-${alertClass}">${latest.alert_level === 'normal' ? 'Bình thường' : 
+                                                        latest.alert_level === 'warning' ? 'Cảnh báo' : 'Nguy hiểm'}</span>
+                    <br><small class="text-muted">${new Date(latest.timestamp).toLocaleString('vi-VN')}</small>
+                `;
+            }
+        }
+        
+        // Update card view
+        const cardVitals = document.querySelector(`[data-patient-id="${patient.id}"] .latest-vitals`);
+        if (cardVitals) {
+            const latest = patient.latest_reading;
+            if (latest) {
+                const heartRate = cardVitals.querySelector('.heart-rate');
+                const temperature = cardVitals.querySelector('.temperature');
+                const oxygenSat = cardVitals.querySelector('.oxygen-saturation');
+                
+                if (heartRate) heartRate.textContent = latest.heart_rate ? latest.heart_rate : '--';
+                if (temperature) temperature.textContent = latest.temperature ? latest.temperature + '°C' : '--';
+                if (oxygenSat) oxygenSat.textContent = latest.oxygen_saturation ? latest.oxygen_saturation + '%' : '--';
+            }
+        }
+    }
+    
+    function setupSearch() {
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase();
+            filterPatients();
+        });
+    }
+    
+    function setupFilters() {
+        document.getElementById('statusFilter').addEventListener('change', filterPatients);
+        document.getElementById('genderFilter').addEventListener('change', filterPatients);
+    }
+    
+    function filterPatients() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const statusFilter = document.getElementById('statusFilter').value;
+        const genderFilter = document.getElementById('genderFilter').value;
+        
+        // Filter table rows
+        const tableRows = document.querySelectorAll('#patientsTable tbody tr');
+        tableRows.forEach(row => {
+            const patientName = row.cells[1].textContent.toLowerCase();
+            const medicalId = row.cells[0].textContent.toLowerCase();
+            const status = row.querySelector('.badge').textContent.toLowerCase();
+            const gender = row.cells[3].textContent.toLowerCase();
+            
+            const matchesSearch = patientName.includes(searchTerm) || medicalId.includes(searchTerm);
+            const matchesStatus = !statusFilter || status.includes(statusFilter);
+            const matchesGender = !genderFilter || gender.includes(genderFilter.toLowerCase());
+            
+            if (matchesSearch && matchesStatus && matchesGender) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+        
+        // Filter card view
+        const patientCards = document.querySelectorAll('#cardViewContainer .patient-card');
+        patientCards.forEach(card => {
+            const patientName = card.querySelector('.card-title').textContent.toLowerCase();
+            const medicalId = card.querySelector('.text-muted').textContent.toLowerCase();
+            const status = card.querySelector('.badge').textContent.toLowerCase();
+            const gender = card.querySelector('.fa-mars, .fa-venus').parentElement.textContent.toLowerCase();
+            
+            const matchesSearch = patientName.includes(searchTerm) || medicalId.includes(searchTerm);
+            const matchesStatus = !statusFilter || status.includes(statusFilter);
+            const matchesGender = !genderFilter || gender.includes(genderFilter.toLowerCase());
+            
+            if (matchesSearch && matchesStatus && matchesGender) {
+                card.parentElement.style.display = '';
+            } else {
+                card.parentElement.style.display = 'none';
+            }
+        });
+    }
+    
+    function clearFilters() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('statusFilter').value = '';
+        document.getElementById('genderFilter').value = '';
+        filterPatients();
+    }
+    
+    function editPatient(patientId) {
+        // TODO: Implement edit functionality
+        showNotification('Chức năng chỉnh sửa sẽ được thêm vào sau', 'info');
+    }
+    
+    function deletePatient(patientId) {
+        if (confirm('Bạn có chắc chắn muốn xóa bệnh nhân này? Hành động này không thể hoàn tác.')) {
+            fetch(`/api/delete_patient/${patientId}`, {
+                method: 'DELETE'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showNotification('Đã xóa bệnh nhân thành công', 'success');
+                    location.reload();
+                } else {
+                    showNotification('Lỗi khi xóa bệnh nhân', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error deleting patient:', error);
+                showNotification('Lỗi khi xóa bệnh nhân', 'error');
+            });
+        }
+    }
+</script>
+{% endblock %}

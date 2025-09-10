@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="vi" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Hệ thống theo dõi bệnh nhân{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Montserrat:wght@600;700&display=swap" rel="stylesheet">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Socket.IO -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    
+    <style>
+        :root {
+            --primary: #4361ee;
+            --primary-light: #4895ef;
+            --secondary: #3f37c9;
+            --success: #4cc9f0;
+            --warning: #f8961e;
+            --danger: #f72585;
+            --dark: #212529;
+            --light: #f8f9fa;
+            
+            --bg-main: #f5f7fa;
+            --bg-card: #ffffff;
+            --text-primary: #2b2d42;
+            --text-secondary: #8d99ae;
+            --border-color: #e9ecef;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+            --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+            --border-radius: 10px;
+            --transition: all 0.25s cubic-bezier(0.645,0.045,0.355,1);
+        }
+
+        /* Dark mode variables */
+        [data-bs-theme="dark"] {
+            --primary: #4895ef;
+            --primary-light: #4361ee;
+            --bg-main: #121212;
+            --bg-card: #1e1e1e;
+            --text-primary: #f8f9fa;
+            --text-secondary: #adb5bd;
+            --border-color: #2d2d2d;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            background: var(--bg-main);
+            color: var(--text-primary);
+            line-height: 1.6;
+        }
+
+        /* Layout */
+        .app-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .app-sidebar {
+            width: 250px;
+            background: var(--dark);
+            color: white;
+            transition: var(--transition);
+            position: fixed;
+            height: 100vh;
+            z-index: 100;
+            box-shadow: var(--shadow-md);
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar-header h4 {
+            margin: 0;
+            font-weight: 600;
+        }
+
+        .sidebar-menu {
+            padding: 15px 0;
+        }
+
+        .sidebar-menu .nav-item {
+            margin: 5px 15px;
+        }
+
+        .sidebar-menu .nav-link {
+            color: var(--text-light);
+            padding: 10px 15px;
+            border-radius: var(--border-radius);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: var(--transition);
+        }
+
+        .sidebar-menu .nav-link:hover,
+        .sidebar-menu .nav-link.active {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            transform: translateX(5px);
+        }
+
+        .sidebar-menu .nav-link i {
+            width: 20px;
+            text-align: center;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 250px;
+            padding: 20px;
+            transition: var(--transition);
+        }
+
+        /* Topbar with System Name */
+        .topbar {
+            background: var(--bg-card);
+            padding: 15px 25px;
+            border-radius: var(--border-radius);
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .system-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .system-name {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 1.4rem;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .system-name i {
+            color: var(--danger);
+            font-size: 1.6rem;
+        }
+
+        /* Theme Toggle */
+        .theme-toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .theme-toggle {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: var(--transition);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        .theme-toggle:hover {
+            background: rgba(var(--primary), 0.1);
+            transform: rotate(30deg);
+        }
+
+        /* User Menu */
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-menu .dropdown-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+            color: var(--text-primary);
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        /* Rest of your styles... */
+        /* Cards */
+        .card {
+            border: none;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            transition: var(--transition);
+            margin-bottom: 20px;
+            background: var(--bg-card);
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-3px);
+        }
+
+        .card-header {
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            padding: 15px 20px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-body {
+            padding: 20px;
+        }
+
+        /* Vital Signs */
+        .vital-card {
+            text-align: center;
+            padding: 20px;
+            border-radius: var(--border-radius);
+            color: white;
+            margin-bottom: 15px;
+        }
+
+        .vital-card.normal {
+            background: var(--success);
+        }
+
+        .vital-card.warning {
+            background: var(--warning);
+        }
+
+        .vital-card.critical {
+            background: var(--danger);
+        }
+
+        .vital-card i {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .vital-card h3 {
+            font-size: 28px;
+            margin: 5px 0;
+            font-weight: 700;
+        }
+
+        /* Buttons */
+        .btn {
+            border-radius: var(--border-radius);
+            padding: 10px 20px;
+            font-weight: 500;
+            transition: var(--transition);
+            border: none;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-light);
+            transform: translateY(-2px);
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .app-sidebar {
+                transform: translateX(-100%);
+                position: fixed;
+                z-index: 1000;
+            }
+            
+            .app-sidebar.show {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .sidebar-overlay {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: rgba(0,0,0,0.5);
+                z-index: 999;
+                display: none;
+            }
+            
+            .sidebar-overlay.show {
+                display: block;
+            }
+
+            .system-name span {
+                display: none;
+            }
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="app-wrapper">
+        {% if current_user.is_authenticated %}
+        <!-- Sidebar -->
+        <div class="app-sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <i class="fas fa-heartbeat fa-lg"></i>
+                <h4>Theo dõi bệnh nhân</h4>
+            </div>
+            
+            <div class="sidebar-menu">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
+                            <i class="fas fa-tachometer-alt"></i>
+                            Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'patients' %}active{% endif %}" href="{{ url_for('patients') }}">
+                            <i class="fas fa-users"></i>
+                            Danh sách bệnh nhân
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint == 'add_patient' %}active{% endif %}" href="{{ url_for('add_patient') }}">
+                            <i class="fas fa-user-plus"></i>
+                            Thêm bệnh nhân
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.endpoint in ['devices', 'add_device', 'edit_device'] %}active{% endif %}" href="{{ url_for('devices') }}">
+                            <i class="fas fa-microchip"></i>
+                            Quản lý thiết bị
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showReports()">
+                            <i class="fas fa-chart-line"></i>
+                            Báo cáo
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" onclick="showSettings()">
+                            <i class="fas fa-cog"></i>
+                            Cài đặt
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Mobile overlay -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        {% endif %}
+        
+        <!-- Main Content -->
+        <div class="main-content" id="mainContent">
+            {% if current_user.is_authenticated %}
+            <!-- Topbar with System Name and Theme Toggle -->
+            <div class="topbar">
+                <div class="system-info">
+                    <div class="system-name">
+                        <i class="fas fa-heartbeat"></i>
+                        <span>HỆ THỐNG THEO DÕI BỆNH NHÂN</span>
+                    </div>
+                </div>
+                
+                <div class="theme-toggle-container">
+                    <button class="theme-toggle" id="themeToggle">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    
+                    <div class="user-menu">
+                        <div class="dropdown">
+                            <div class="user-avatar dropdown-toggle" data-bs-toggle="dropdown">
+                                {{ current_user.username[0].upper() }}
+                            </div>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#">
+                                    <i class="fas fa-user-cog me-2"></i>Cài đặt tài khoản
+                                </a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item" href="{{ url_for('logout') }}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Đăng xuất
+                                </a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+            
+            <!-- Flash messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                            <i class="fas fa-{{ 'exclamation-triangle' if category == 'warning' else 'check-circle' if category == 'success' else 'info-circle' }} me-2"></i>
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <!-- Content -->
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // Theme Toggle Functionality
+        const themeToggle = document.getElementById('themeToggle');
+        const htmlElement = document.documentElement;
+        
+        // Check for saved theme preference or use preferred color scheme
+        const savedTheme = localStorage.getItem('theme') || 
+                          (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        
+        // Apply the saved theme
+        htmlElement.setAttribute('data-bs-theme', savedTheme);
+        updateThemeIcon(savedTheme);
+        
+        // Toggle theme on button click
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = htmlElement.getAttribute('data-bs-theme');
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            
+            htmlElement.setAttribute('data-bs-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeIcon(newTheme);
+        });
+        
+        function updateThemeIcon(theme) {
+            const icon = themeToggle.querySelector('i');
+            if (theme === 'dark') {
+                icon.classList.replace('fa-moon', 'fa-sun');
+                icon.style.color = '#ffc107'; // Màu vàng cho mặt trời
+            } else {
+                icon.classList.replace('fa-sun', 'fa-moon');
+                icon.style.color = ''; // Reset màu
+            }
+        }
+
+        // Initialize Socket.IO connection
+        let socket;
+        if (typeof io !== 'undefined') {
+            socket = io();
+            
+            // Handle real-time updates
+            socket.on('sensor_update', function(data) {
+                console.log('Received sensor update:', data);
+                updatePatientCard(data);
+                showNotification('Cập nhật dữ liệu từ bệnh nhân: ' + data.patient_name, data.reading.alert_level);
+            });
+        }
+
+        function updatePatientCard(data) {
+            const patientCard = document.querySelector(`[data-patient-id="${data.patient_id}"]`);
+            if (patientCard) {
+                // Update vital signs display
+                const heartRate = patientCard.querySelector('.heart-rate');
+                const temperature = patientCard.querySelector('.temperature');
+                const oxygenSat = patientCard.querySelector('.oxygen-saturation');
+                
+                if (heartRate) heartRate.textContent = data.reading.heart_rate + ' bpm';
+                if (temperature) temperature.textContent = data.reading.temperature + ' °C';
+                if (oxygenSat) oxygenSat.textContent = data.reading.oxygen_saturation + ' %';
+                
+                // Update alert level
+                const alertBadge = patientCard.querySelector('.alert-badge');
+                if (alertBadge) {
+                    alertBadge.className = `badge bg-${data.reading.alert_level === 'normal' ? 'success' : data.reading.alert_level === 'warning' ? 'warning' : 'danger'}`;
+                    alertBadge.textContent = data.reading.alert_level === 'normal' ? 'Bình thường' : 
+                                           data.reading.alert_level === 'warning' ? 'Cảnh báo' : 'Nguy hiểm';
+                }
+            }
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `alert alert-${type === 'critical' ? 'danger' : type === 'warning' ? 'warning' : 'success'} alert-dismissible fade show position-fixed`;
+            notification.style.top = '20px';
+            notification.style.right = '20px';
+            notification.style.zIndex = '9999';
+            notification.style.minWidth = '300px';
+            notification.style.borderRadius = '8px';
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'critical' ? 'exclamation-triangle' : type === 'warning' ? 'exclamation-circle' : 'check-circle'} me-2"></i>
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+
+        // Toggle sidebar on mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebarOverlay');
+            
+            sidebar.classList.toggle('show');
+            overlay.classList.toggle('show');
+        }
+
+        // Close sidebar when clicking overlay
+        document.getElementById('sidebarOverlay')?.addEventListener('click', function() {
+            toggleSidebar();
+        });
+
+        // Placeholder functions
+        function showReports() {
+            showNotification('Tính năng báo cáo đang được phát triển', 'info');
+        }
+
+        function showSettings() {
+            showNotification('Tính năng cài đặt đang được phát triển', 'info');
+        }
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

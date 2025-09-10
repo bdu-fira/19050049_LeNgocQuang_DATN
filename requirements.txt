@@ -1,0 +1,28 @@
+Flask>=2.3.0
+Flask-SocketIO>=5.3.0
+Flask-Login>=0.6.0
+Werkzeug>=2.3.0
+python-socketio>=5.8.0
+python-engineio>=4.7.0
+SQLAlchemy>=2.0.0
+psycopg2-binary>=2.9.0
+redis>=4.5.0
+requests>=2.31.0
+
+# ESP32 Libraries (for Arduino IDE)
+# DHT sensor library: https://github.com/adafruit/DHT-sensor-library
+# Adafruit SSD1306: https://github.com/adafruit/Adafruit_SSD1306
+# Adafruit GFX Library: https://github.com/adafruit/Adafruit-GFX-Library
+# TinyGPS++: https://github.com/mikalhart/TinyGPSPlus
+# OneWire: https://github.com/paulstoffregen/OneWire
+# DallasTemperature: https://github.com/milesburton/Arduino-Temperature-Control-Library
+# ArduinoJson: https://github.com/bblanchon/ArduinoJson
+
+# Các cảm biến thực tế được sử dụng:
+# - GPS NEO-6M: TinyGPS++ library
+# - Run MHsensor series: Digital input (không cần thư viện đặc biệt)
+# - MH-ETLive: I2C communication (cần thư viện Wire)
+# - DHT11: DHT sensor library
+# - AD8232: Analog input (không cần thư viện đặc biệt)
+# - DS18B20: OneWire + DallasTemperature libraries
+# - OLED 0.91": Adafruit SSD1306 + Adafruit GFX libraries

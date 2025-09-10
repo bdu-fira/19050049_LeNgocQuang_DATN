@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng nhập - Hệ thống Quản lý Phòng khám</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Biến màu sắc */
+        :root {
+            --primary-color: #2a7fba;
+            --secondary-color: #3bb3bd;
+            --accent-color: #ff7e5f;
+            --light-color: #f8fafc;
+            --dark-color: #1e293b;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #17a2b8;
+        }
+
+        /* Reset và font chữ */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        /* Container chính */
+        .login-container {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Hiệu ứng nền */
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 15s ease-in-out infinite alternate;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            100% {
+                transform: scale(1.1);
+            }
+        }
+
+        /* Thẻ đăng nhập */
+        .login-card {
+            background: rgba(255, 255, 255, 0.98);
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            width: 100%;
+            max-width: 420px;
+            position: relative;
+            z-index: 10;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .login-card:hover {
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Phần header */
+        .login-header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+        }
+
+        .login-header::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.5), transparent);
+        }
+
+        /* Biểu tượng phòng khám */
+        .clinic-icon {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            display: inline-block;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        /* Tiêu đề */
+        .login-header h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .login-header p {
+            margin: 10px 0 0;
+            opacity: 0.9;
+            font-size: 0.95rem;
+        }
+
+        /* Phần thân */
+        .login-body {
+            padding: 40px;
+        }
+
+        /* Form group */
+        .form-group {
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        /* Input control */
+        .form-control {
+            width: 100%;
+            padding: 15px 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background-color: #f8fafc;
+        }
+
+        .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(42, 127, 186, 0.2);
+            outline: none;
+            background-color: white;
+            transform: translateY(-2px);
+        }
+
+        /* Label */
+        .input-label {
+            position: absolute;
+            left: 20px;
+            top: 15px;
+            color: #64748b;
+            transition: all 0.3s ease;
+            pointer-events: none;
+            background: #f8fafc;
+            padding: 0 5px;
+        }
+
+        .form-control:focus + .input-label,
+        .form-control:not(:placeholder-shown) + .input-label {
+            top: -10px;
+            left: 15px;
+            font-size: 0.8rem;
+            color: var(--primary-color);
+            background: white;
+            font-weight: 600;
+        }
+
+        /* Biểu tượng input */
+        .input-icon {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus ~ .input-icon {
+            color: var(--primary-color);
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        /* Nút đăng nhập */
+        .login-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--secondary-color) 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 4px 15px rgba(42, 127, 186, 0.3);
+            margin-top: 10px;
+        }
+
+        .login-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 20px rgba(42, 127, 186, 0.4);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+        }
+
+        .login-btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: all 0.6s ease;
+        }
+
+        .login-btn:hover::after {
+            left: 100%;
+        }
+
+        /* Phần thông báo lỗi */
+        .alert {
+            padding: 15px;
+            margin-bottom: 25px;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+        }
+
+        .alert-danger {
+            background-color: rgba(220, 53, 69, 0.1);
+            border-left: 4px solid var(--danger-color);
+            color: var(--danger-color);
+        }
+
+        .alert i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+
+        /* Phần tài khoản demo */
+        .demo-section {
+            margin-top: 30px;
+            background: rgba(42, 127, 186, 0.05);
+            border-radius: 10px;
+            padding: 20px;
+            border: 1px dashed rgba(42, 127, 186, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .demo-section:hover {
+            border-color: rgba(42, 127, 186, 0.5);
+            background: rgba(42, 127, 186, 0.08);
+        }
+
+        .demo-title {
+            font-weight: 600;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .demo-title i {
+            margin-right: 8px;
+            font-size: 1.2rem;
+        }
+
+        .demo-credentials {
+            font-family: 'Courier New', monospace;
+            text-align: left;
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        .demo-account {
+            padding: 8px 12px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+        }
+
+        .demo-account:last-child {
+            margin-bottom: 0;
+        }
+
+        .demo-account:hover {
+            background: rgba(42, 127, 186, 0.1);
+            transform: translateX(5px);
+        }
+
+        .demo-account i {
+            margin-right: 10px;
+            color: var(--primary-color);
+            font-size: 0.9rem;
+            width: 20px;
+            text-align: center;
+        }
+
+        .demo-account strong {
+            color: var(--primary-color);
+            font-weight: 600;
+            margin-right: 5px;
+            min-width: 110px;
+            display: inline-block;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .login-header, .login-body {
+                padding: 30px;
+            }
+            
+            .clinic-icon {
+                font-size: 3rem;
+            }
+            
+            .login-header h1 {
+                font-size: 1.5rem;
+            }
+
+            .demo-account {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .demo-account i {
+                margin-bottom: 5px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .login-header, .login-body {
+                padding: 25px;
+            }
+
+            .login-header h1 {
+                font-size: 1.3rem;
+            }
+
+            .login-header p {
+                font-size: 0.85rem;
+            }
+
+            .form-control {
+                padding: 12px 16px;
+            }
+
+            .demo-account strong {
+                min-width: 90px;
+                font-size: 0.9rem;
+            }
+        }
+
+        /* Hiệu ứng chuyển trang */
+        .page-transition {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--primary-color);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease;
+        }
+
+        .page-transition.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .page-transition i {
+            color: white;
+            font-size: 3rem;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hiệu ứng chuyển trang -->
+    <div class="page-transition" id="pageTransition">
+        <i class="fas fa-circle-notch"></i>
+    </div>
+
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-header">
+                <div class="clinic-icon">
+                    <i class="fas fa-clinic-medical"></i>
+                </div>
+                <h1>HỆ THỐNG QUẢN LÝ PHÒNG KHÁM</h1>
+                <p>Đăng nhập để truy cập hệ thống</p>
+            </div>
+            
+            <div class="login-body">
+                <!-- Thông báo lỗi (nếu có) -->
+                <div class="alert alert-danger" style="display: none;">
+                    <i class="fas fa-exclamation-circle"></i> 
+                    <span id="error-message"></span>
+                </div>
+                
+                <!-- Form đăng nhập -->
+                <form method="POST" id="loginForm">
+                    <div class="form-group">
+                        <input type="text" class="form-control" id="username" name="username" placeholder=" " required>
+                        <label for="username" class="input-label">Tên đăng nhập</label>
+                        <i class="fas fa-user input-icon"></i>
+                    </div>
+                    
+                    <div class="form-group">
+                        <input type="password" class="form-control" id="password" name="password" placeholder=" " required>
+                        <label for="password" class="input-label">Mật khẩu</label>
+                        <i class="fas fa-lock input-icon"></i>
+                    </div>
+                    
+                    <button type="submit" class="login-btn">
+                        <i class="fas fa-sign-in-alt"></i> ĐĂNG NHẬP
+                    </button>
+                </form>
+                
+                <!-- Phần tài khoản demo -->
+                <div class="demo-section">
+                    <div class="demo-title">
+                        <i class="fas fa-info-circle"></i> TÀI KHOẢN DEMO
+                    </div>
+                    <div class="demo-credentials">
+                        <div class="demo-account" onclick="fillCredentials('admin', 'admin123')">
+                            <i class="fas fa-user-shield"></i>
+                            <strong>Quản trị viên:</strong> admin / admin123
+                        </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Hiển thị thông báo lỗi nếu có
+        function showError(message) {
+            const errorAlert = document.querySelector('.alert');
+            const errorMessage = document.getElementById('error-message');
+            
+            if (message) {
+                errorMessage.textContent = message;
+                errorAlert.style.display = 'flex';
+            } else {
+                errorAlert.style.display = 'none';
+            }
+        }
+
+        // Điền thông tin đăng nhập từ tài khoản demo
+        function fillCredentials(username, password) {
+            document.getElementById('username').value = username;
+            document.getElementById('password').value = password;
+            
+            // Kích hoạt animation cho label
+            document.getElementById('username').dispatchEvent(new Event('input'));
+            document.getElementById('password').dispatchEvent(new Event('input'));
+            
+            // Hiệu ứng visual feedback
+            event.currentTarget.style.background = 'rgba(42, 127, 186, 0.2)';
+            setTimeout(() => {
+                event.currentTarget.style.background = '';
+            }, 300);
+            
+            // Ẩn thông báo lỗi nếu có
+            showError(null);
+        }
+
+        // Chuyển hướng đến trang chính
+        function redirectToDashboard(role) {
+            const transition = document.getElementById('pageTransition');
+            
+            // Hiển thị hiệu ứng chuyển trang
+            transition.classList.add('active');
+            
+            // Giả lập thời gian chuyển trang (trong thực tế sẽ là thời gian nhận phản hồi từ server)
+            setTimeout(() => {
+                // Lưu thông tin đăng nhập vào localStorage (hoặc sessionStorage)
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('userRole', role);
+                
+                // Chuyển hướng đến trang chính
+                window.location.href = 'base.html'; // Thay bằng đường dẫn thực tế
+            }, 1500);
+        }
+
+        // Xử lý khi form submit
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const button = this.querySelector('.login-btn');
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang xác thực...';
+            button.disabled = true;
+            
+            // Lấy thông tin đăng nhập
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            // Giả lập xác thực (trong thực tế sẽ gọi API)
+            setTimeout(() => {
+                // Kiểm tra thông tin đăng nhập
+                const validAccounts = {
+                    'admin': { password: 'admin123', role: 'admin' },
+                    'doctor': { password: 'doctor123', role: 'doctor' },
+                    'nurse': { password: 'nurse123', role: 'nurse' }
+                };
+                
+                if (validAccounts[username] && validAccounts[username].password === password) {
+                    // Đăng nhập thành công - chuyển hướng
+                    redirectToDashboard(validAccounts[username].role);
+                } else {
+                    // Đăng nhập thất bại
+                    showError('Tên đăng nhập hoặc mật khẩu không chính xác');
+                    button.innerHTML = '<i class="fas fa-sign-in-alt"></i> ĐĂNG NHẬP';
+                    button.disabled = false;
+                }
+            }, 1000);
+        });
+
+        // Kiểm tra nếu có thông báo lỗi từ server (giả lập)
+        window.onload = function() {
+            // Giả lập có lỗi từ URL parameter
+            const urlParams = new URLSearchParams(window.location.search);
+            const error = urlParams.get('error');
+            
+            if (error) {
+                showError(decodeURIComponent(error));
+            }
+
+            // Kiểm tra nếu đã đăng nhập (trong thực tế sẽ kiểm tra token/session)
+            if (localStorage.getItem('isLoggedIn') {
+                // Nếu đã đăng nhập, chuyển hướng luôn đến trang chính
+                window.location.href = 'base.html';
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+# ESP32 Simulator Dockerfile
+FROM python:3.11-slim
+
+# Set working directory
+WORKDIR /app
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Python dependencies
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir requests
+
+# Create simple ESP32 simulator script
+RUN echo '#!/usr/bin/env python3\n\
+import requests\n\
+import json\n\
+import time\n\
+import random\n\
+import os\n\
+\n\
+FLASK_SERVER_URL = os.getenv("FLASK_SERVER_URL", "http://localhost:5000/api/sensor_data")\n\
+SIMULATION_INTERVAL = int(os.getenv("SIMULATION_INTERVAL", 30))\n\
+DEVICE_ID = "ESP32_PATIENT_MONITOR_001"\n\
+\n\
+def generate_sensor_data():\n\
+    return {\n\
+        "device_id": DEVICE_ID,\n\
+        "timestamp": time.time(),\n\
+        "heart_rate": random.randint(60, 100),\n\
+        "temperature": round(random.uniform(36.0, 37.5), 1),\n\
+        "oxygen_saturation": round(random.uniform(95.0, 99.0), 1),\n\
+        "bp_systolic": random.randint(110, 140),\n\
+        "bp_diastolic": random.randint(70, 90),\n\
+        "respiratory_rate": random.randint(12, 20),\n\
+        "fall_detected": random.random() < 0.05,\n\
+        "fall_confidence": random.uniform(0.0, 0.3),\n\
+        "latitude": 10.7756 + random.uniform(-0.001, 0.001),\n\
+        "longitude": 106.7017 + random.uniform(-0.001, 0.001),\n\
+        "room_detected": random.choice(["Room 101", "Room 102", "ICU-1"]),\n\
+        "battery_level": round(random.uniform(80.0, 100.0), 1)\n\
+    }\n\
+\n\
+def main():\n\
+    print(f"🚀 ESP32 Simulator started")\n\
+    print(f"📡 Sending data to: {FLASK_SERVER_URL}")\n\
+    print(f"⏱️  Interval: {SIMULATION_INTERVAL} seconds")\n\
+    \n\
+    while True:\n\
+        try:\n\
+            data = generate_sensor_data()\n\
+            response = requests.post(FLASK_SERVER_URL, json=data, timeout=10)\n\
+            if response.status_code == 200:\n\
+                print(f"✅ Data sent: HR={data[\"heart_rate\"]}, Temp={data[\"temperature\"]}°C")\n\
+            else:\n\
+                print(f"❌ Failed to send data: {response.status_code}")\n\
+        except Exception as e:\n\
+            print(f"⚠️  Error: {e}")\n\
+        \n\
+        time.sleep(SIMULATION_INTERVAL)\n\
+\n\
+if __name__ == "__main__":\n\
+    main()\n\
+' > /app/esp32_simulator.py
+
+# Make script executable
+RUN chmod +x /app/esp32_simulator.py
+
+# Create non-root user
+RUN useradd --create-home --shell /bin/bash app && \
+    chown -R app:app /app
+USER app
+
+# Run ESP32 simulator
+CMD ["python", "esp32_simulator.py"] 

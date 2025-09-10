@@ -1,0 +1,325 @@
+{% extends "base.html" %}
+
+{% block title %}Thêm bệnh nhân - Hệ thống theo dõi bệnh nhân{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h2><i class="fas fa-user-plus me-2"></i>Thêm bệnh nhân mới</h2>
+        <p class="text-muted">Nhập thông tin bệnh nhân để bắt đầu theo dõi</p>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-user-edit me-2"></i>Thông tin bệnh nhân</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="name" class="form-label">
+                                    <i class="fas fa-user me-2"></i>Họ và tên *
+                                </label>
+                                <input type="text" class="form-control" id="name" name="name" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="age" class="form-label">
+                                    <i class="fas fa-birthday-cake me-2"></i>Tuổi *
+                                </label>
+                                <input type="number" class="form-control" id="age" name="age" min="1" max="120" required>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="mb-3">
+                                <label for="gender" class="form-label">
+                                    <i class="fas fa-venus-mars me-2"></i>Giới tính *
+                                </label>
+                                <select class="form-select" id="gender" name="gender" required>
+                                    <option value="">Chọn giới tính</option>
+                                    <option value="Nam">Nam</option>
+                                    <option value="Nữ">Nữ</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="phone" class="form-label">
+                                    <i class="fas fa-phone me-2"></i>Số điện thoại
+                                </label>
+                                <input type="tel" class="form-control" id="phone" name="phone">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">
+                                    <i class="fas fa-envelope me-2"></i>Email
+                                </label>
+                                <input type="email" class="form-control" id="email" name="email">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="medical_id" class="form-label">
+                                    <i class="fas fa-id-card me-2"></i>Mã bệnh nhân *
+                                </label>
+                                <input type="text" class="form-control" id="medical_id" name="medical_id" required>
+                                <div class="form-text">Mã định danh duy nhất cho bệnh nhân</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="room_number" class="form-label">
+                                    <i class="fas fa-bed me-2"></i>Số phòng
+                                </label>
+                                <input type="text" class="form-control" id="room_number" name="room_number">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="device_id" class="form-label">
+                                    <i class="fas fa-microchip me-2"></i>Thiết bị ESP32 *
+                                </label>
+                                {% if devices %}
+                                    <select class="form-select" id="device_id" name="device_id" required>
+                                        <option value="">Chọn thiết bị ESP32</option>
+                                        {% for device in devices %}
+                                            <option value="{{ device.device_id }}">
+                                                {{ device.device_name }} ({{ device.device_id }}) - {{ device.room_location }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                    <div class="form-text">Chọn thiết bị ESP32 có sẵn để gán cho bệnh nhân</div>
+                                {% else %}
+                                    <div class="alert alert-warning">
+                                        <i class="fas fa-exclamation-triangle me-2"></i>
+                                        Chưa có thiết bị ESP32 nào. 
+                                        <a href="{{ url_for('add_device') }}" class="alert-link">Thêm thiết bị mới</a>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label">
+                                    <i class="fas fa-info-circle me-2"></i>Trạng thái
+                                </label>
+                                <div class="form-control-plaintext">
+                                    <span class="badge bg-success">Đang hoạt động</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-end">
+                        <a href="{{ url_for('patients') }}" class="btn btn-secondary me-2">
+                            <i class="fas fa-arrow-left me-2"></i>Hủy
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-2"></i>Lưu thông tin
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-info-circle me-2"></i>Hướng dẫn</h5>
+            </div>
+            <div class="card-body">
+                <h6>Thông tin bắt buộc:</h6>
+                <ul class="list-unstyled">
+                    <li><i class="fas fa-check text-success me-2"></i>Họ và tên</li>
+                    <li><i class="fas fa-check text-success me-2"></i>Tuổi</li>
+                    <li><i class="fas fa-check text-success me-2"></i>Giới tính</li>
+                    <li><i class="fas fa-check text-success me-2"></i>Mã bệnh nhân</li>
+                    <li><i class="fas fa-check text-success me-2"></i>Mã thiết bị ESP32</li>
+                </ul>
+                
+                <hr>
+                
+                <h6>Lưu ý:</h6>
+                <ul class="small text-muted">
+                    <li>Mã bệnh nhân phải là duy nhất</li>
+                    <li>Mã thiết bị ESP32 cần khớp với thiết bị thực tế</li>
+                    <li>Số phòng giúp định vị bệnh nhân</li>
+                    <li>Thông tin liên lạc giúp thông báo khẩn cấp</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h5><i class="fas fa-microchip me-2"></i>Cấu hình ESP32</h5>
+            </div>
+            <div class="card-body">
+                <p class="small">Để thiết bị ESP32 hoạt động, cần cấu hình:</p>
+                <ul class="small">
+                    <li>WiFi connection</li>
+                    <li>Server endpoint: <code>/api/sensor_data</code></li>
+                    <li>Device ID phải khớp với mã nhập</li>
+                    <li>Gửi dữ liệu định kỳ (30s)</li>
+                </ul>
+                
+                <button class="btn btn-sm btn-outline-primary" onclick="showESP32Config()">
+                    <i class="fas fa-code me-2"></i>Xem mã ESP32
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ESP32 Configuration Modal -->
+<div class="modal fade" id="esp32Modal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="fas fa-microchip me-2"></i>Cấu hình ESP32
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Sử dụng mã Arduino sau để cấu hình ESP32:</p>
+                <pre><code>#include &lt;WiFi.h&gt;
+#include &lt;HTTPClient.h&gt;
+#include &lt;ArduinoJson.h&gt;
+
+const char* ssid = "YOUR_WIFI_SSID";
+const char* password = "YOUR_WIFI_PASSWORD";
+const char* serverURL = "http://YOUR_SERVER_IP:5000/api/sensor_data";
+const char* deviceID = "ESP32_DEVICE_ID"; // Thay bằng mã thiết bị
+
+void setup() {
+    Serial.begin(115200);
+    WiFi.begin(ssid, password);
+    
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(1000);
+        Serial.println("Connecting to WiFi...");
+    }
+    Serial.println("Connected to WiFi");
+}
+
+void loop() {
+    if (WiFi.status() == WL_CONNECTED) {
+        HTTPClient http;
+        http.begin(serverURL);
+        http.addHeader("Content-Type", "application/json");
+        
+        // Tạo JSON data
+        StaticJsonDocument&lt;200&gt; doc;
+        doc["device_id"] = deviceID;
+        doc["heart_rate"] = readHeartRate();
+        doc["temperature"] = readTemperature();
+        doc["oxygen_saturation"] = readOxygenSaturation();
+        doc["bp_systolic"] = readBPSystolic();
+        doc["bp_diastolic"] = readBPDiastolic();
+        doc["respiratory_rate"] = readRespiratoryRate();
+        doc["room_temperature"] = readRoomTemperature();
+        doc["humidity"] = readHumidity();
+        
+        String jsonString;
+        serializeJson(doc, jsonString);
+        
+        int httpResponseCode = http.POST(jsonString);
+        
+        if (httpResponseCode > 0) {
+            String response = http.getString();
+            Serial.println("Response: " + response);
+        } else {
+            Serial.println("Error sending data");
+        }
+        
+        http.end();
+    }
+    
+    delay(30000); // Gửi dữ liệu mỗi 30 giây
+}
+
+// Các hàm đọc sensor (cần implement theo sensor thực tế)
+float readHeartRate() {
+    // Implement heart rate sensor reading
+    return 75.0; // Giá trị mẫu
+}
+
+float readTemperature() {
+    // Implement temperature sensor reading
+    return 37.0; // Giá trị mẫu
+}
+
+float readOxygenSaturation() {
+    // Implement oxygen saturation sensor reading
+    return 98.0; // Giá trị mẫu
+}
+
+float readBPSystolic() {
+    // Implement blood pressure sensor reading
+    return 120.0; // Giá trị mẫu
+}
+
+float readBPDiastolic() {
+    // Implement blood pressure sensor reading
+    return 80.0; // Giá trị mẫu
+}
+
+float readRespiratoryRate() {
+    // Implement respiratory rate sensor reading
+    return 16.0; // Giá trị mẫu
+}
+
+float readRoomTemperature() {
+    // Implement room temperature sensor reading
+    return 24.0; // Giá trị mẫu
+}
+
+float readHumidity() {
+    // Implement humidity sensor reading
+    return 60.0; // Giá trị mẫu
+}</code></pre>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" onclick="copyToClipboard()">
+                    <i class="fas fa-copy me-2"></i>Sao chép
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function showESP32Config() {
+        const modal = new bootstrap.Modal(document.getElementById('esp32Modal'));
+        modal.show();
+    }
+    
+    function copyToClipboard() {
+        const code = document.querySelector('pre code').textContent;
+        navigator.clipboard.writeText(code).then(() => {
+            showNotification('Mã ESP32 đã được sao chép', 'success');
+        });
+    }
+    
+    // No need to generate device ID anymore since we use dropdown
+</script>
+{% endblock %} 

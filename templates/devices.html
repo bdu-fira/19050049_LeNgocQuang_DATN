@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block title %}ESP32 Devices - Patient Monitoring{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-microchip me-2"></i>ESP32 Devices Management</h2>
+                <a href="{{ url_for('add_device') }}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Add New Device
+                </a>
+            </div>
+
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="devicesTable">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Device ID</th>
+                                    <th>Device Name</th>
+                                    <th>Type</th>
+                                    <th>Location</th>
+                                    <th>Status</th>
+                                    <th>Battery</th>
+                                    <th>Signal</th>
+                                    <th>Last Seen</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for device in devices %}
+                                <tr>
+                                    <td>
+                                        <span class="badge bg-secondary">{{ device.device_id }}</span>
+                                    </td>
+                                    <td>{{ device.device_name }}</td>
+                                    <td>
+                                        <span class="badge {% if device.device_type == 'patient_monitor' %}bg-primary{% else %}bg-info{% endif %}">
+                                            {{ device.device_type.replace('_', ' ').title() }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <i class="fas fa-map-marker-alt me-1"></i>
+                                        {{ device.room_location or 'Not set' }}
+                                    </td>
+                                    <td>
+                                        {% if device.is_active %}
+                                            <span class="badge bg-success">
+                                                <i class="fas fa-circle me-1"></i>Active
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-danger">
+                                                <i class="fas fa-circle me-1"></i>Inactive
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if device.battery_level %}
+                                            <div class="d-flex align-items-center">
+                                                <div class="progress me-2" style="width: 60px; height: 8px;">
+                                                    <div class="progress-bar {% if device.battery_level > 50 %}bg-success{% elif device.battery_level > 20 %}bg-warning{% else %}bg-danger{% endif %}" style="width: {{ device.battery_level }}%"></div>
+                                                </div>
+                                                <small>{{ "%.0f"|format(device.battery_level) }}%</small>
+                                            </div>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if device.signal_strength %}
+                                            <span class="{% if device.signal_strength > -60 %}text-success{% elif device.signal_strength > -80 %}text-warning{% else %}text-danger{% endif %}">
+                                                <i class="fas fa-wifi me-1"></i>{{ device.signal_strength }} dBm
+                                            </span>
+                                        {% else %}
+                                            <span class="text-muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if device.last_seen %}
+                                            <small class="text-muted">
+                                                {{ moment(device.last_seen).fromNow() if device.last_seen else 'Never' }}
+                                            </small>
+                                        {% else %}
+                                            <span class="text-muted">Never</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('edit_device', device_id=device.device_id) }}" 
+                                               class="btn btn-sm btn-outline-primary">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <button class="btn btn-sm btn-outline-danger" 
+                                                    onclick="deleteDevice('{{ device.device_id }}', '{{ device.device_name }}')">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    {% if not devices %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-microchip fa-3x text-muted mb-3"></i>
+                        <h5 class="text-muted">No ESP32 devices found</h5>
+                        <p class="text-muted">Add your first ESP32 device to get started.</p>
+                        <a href="{{ url_for('add_device') }}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Add Device
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete device <strong id="deviceNameToDelete"></strong>?</p>
+                <p class="text-muted small">This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn">Delete Device</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let deviceToDelete = null;
+
+function deleteDevice(deviceId, deviceName) {
+    deviceToDelete = deviceId;
+    document.getElementById('deviceNameToDelete').textContent = deviceName;
+    new bootstrap.Modal(document.getElementById('deleteModal')).show();
+}
+
+document.getElementById('confirmDeleteBtn').addEventListener('click', function() {
+    if (deviceToDelete) {
+        fetch(`/api/delete_device/${deviceToDelete}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert(data.error || 'Failed to delete device');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Failed to delete device');
+        });
+        
+        bootstrap.Modal.getInstance(document.getElementById('deleteModal')).hide();
+    }
+});
+
+// Initialize DataTable
+$(document).ready(function() {
+    $('#devicesTable').DataTable({
+        responsive: true,
+        pageLength: 25,
+        order: [[7, 'desc']], // Sort by last seen
+        columnDefs: [
+            { orderable: false, targets: [8] } // Disable sorting for actions column
+        ]
+    });
+});
+</script>
+
+<style>
+.progress {
+    background-color: #e9ecef;
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+.btn-group .btn {
+    margin: 0 1px;
+}
+
+.badge {
+    font-size: 0.875em;
+}
+</style>
+{% endblock %} 

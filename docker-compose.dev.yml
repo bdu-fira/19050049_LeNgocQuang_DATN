@@ -1,0 +1,88 @@
+services:
+  # Flask Patient Monitoring Application (Development)
+  patient-monitor-app:
+    build: 
+      context: .
+      dockerfile: Dockerfile.dev
+    container_name: patient-monitor-app-dev
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=development
+      - FLASK_APP=app.py
+      - FLASK_DEBUG=1
+      - REDIS_URL=redis://redis:6379
+      - DATABASE_URL=postgresql://patient_user:patient_password@postgres:5432/patient_monitor
+    volumes:
+      - .:/app
+    depends_on:
+      - redis
+      - postgres
+    restart: unless-stopped
+    networks:
+      - patient-monitor-network
+    command: ["python", "app.py"]
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: patient-monitor-postgres-dev
+    environment:
+      - POSTGRES_DB=patient_monitor
+      - POSTGRES_USER=patient_user
+      - POSTGRES_PASSWORD=patient_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - patient-monitor-network
+
+  # Redis for SocketIO session storage
+  redis:
+    image: redis:7-alpine
+    container_name: patient-monitor-redis-dev
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - patient-monitor-network
+
+  # ESP32 Simulator for testing
+  esp32-simulator:
+    build:
+      context: .
+      dockerfile: Dockerfile.esp32-sim
+    container_name: esp32-simulator
+    environment:
+      - FLASK_SERVER_URL=http://patient-monitor-app:5000/api/sensor_data
+      - SIMULATION_INTERVAL=30
+    depends_on:
+      - patient-monitor-app
+    restart: unless-stopped
+    networks:
+      - patient-monitor-network
+
+  # Development tools
+  adminer:
+    image: adminer:latest
+    container_name: patient-monitor-adminer
+    ports:
+      - "8080:8080"
+    environment:
+      - ADMINER_DEFAULT_SERVER=postgres
+      - ADMINER_DESIGN=pepa-linha-dark
+    restart: unless-stopped
+    networks:
+      - patient-monitor-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  patient-monitor-network:
+    driver: bridge 
